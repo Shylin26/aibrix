@@ -38,7 +38,7 @@ func (r *StormServiceReconciler) getControllerRevision(ctx context.Context, obj 
 	revisionList := &apps.ControllerRevisionList{}
 	matchLabels := client.MatchingLabels(getRevisionLabels(obj))
 	if err := r.List(ctx, revisionList, matchLabels, client.InNamespace(obj.GetNamespace())); err != nil {
-		return nil, fmt.Errorf("list controller revision failed, %v", err)
+		return nil, fmt.Errorf("list controller revision failed, %w", err)
 	}
 
 	revisions := make([]*apps.ControllerRevision, 0, len(revisionList.Items))

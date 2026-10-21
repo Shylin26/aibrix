@@ -18,8 +18,7 @@ package stormservice
 
 import (
 	"context"
-	"fmt"
-	"strings"
+	"errors"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -57,17 +56,18 @@ func TestReconcileReturnsControllerRevisionListError(t *testing.T) {
 			},
 		},
 	}
+	errListTimeout := errors.New("temporary apiserver timeout")
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(storm).WithInterceptorFuncs(interceptor.Funcs{
 		List: func(ctx context.Context, c client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
 			if _, ok := list.(*appsv1.ControllerRevisionList); ok {
-				return fmt.Errorf("temporary apiserver timeout")
+				return errListTimeout
 			}
 			return c.List(ctx, list, opts...)
 		},
 	}).Build()
 	r := &StormServiceReconciler{Client: c, Scheme: scheme, EventRecorder: record.NewFakeRecorder(8)}
 	result, err := r.Reconcile(context.Background(), reconcile.Request{NamespacedName: client.ObjectKeyFromObject(storm)})
-	if err == nil || !strings.Contains(err.Error(), "temporary apiserver timeout") {
+	if !errors.Is(err, errListTimeout) {
 		t.Fatalf("ControllerRevision list error not returned: result=%+v err=%v", result, err)
 	}
 }
